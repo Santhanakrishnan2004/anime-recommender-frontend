@@ -71,9 +71,7 @@ function Header() {
         <h1 style={{ fontSize: 22, fontWeight: 800 }}>Anime Recommender</h1>
 
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <button onClick={toggleTheme} className="btn btn--icon btn--ghost" aria-label="Toggle theme">
-            {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-          </button>
+        
 
           {user ? (
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
