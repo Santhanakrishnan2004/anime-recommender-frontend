@@ -1,8 +1,7 @@
-
 "use client"
 import './index.css';
 import { useState, useEffect, createContext, useContext } from "react"
-import { Sun, Moon, User, Heart, List, Plus, X, Star, MonitorPlay, CheckCircle2, Calendar } from "lucide-react"
+import { Sun, Moon, User, Heart, List, Plus, X, Star, MonitorPlay, CheckCircle2, Calendar, EyeOff, Eye } from "lucide-react"
 // import { Plus, X, Star } from "lucide-react"
 const API_BASE = "http://127.0.0.1:5000"
 // Theme Context
@@ -188,7 +187,8 @@ function MainContent() {
   const [suggestions, setSuggestions] = useState([])
   const [selectedAnime, setSelectedAnime] = useState(null)
   const [recommendations, setRecommendations] = useState([])
-const [genreFilter, setGenreFilter] = useState([])
+  const [genreFilter, setGenreFilter] = useState([])
+  const [nsfwEnabled, setNsfwEnabled] = useState(false)
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -198,6 +198,22 @@ const [genreFilter, setGenreFilter] = useState([])
     completed: [],
     planned: [],
   })
+
+  // NSFW genres/tags to filter out
+  const NSFW_TAGS = ['Hentai', 'Ecchi', 'Yaoi', 'Yuri', 'Shounen Ai', 'Shoujo Ai']
+
+  // Filter function to check if anime contains NSFW content
+  const isNSFW = (anime) => {
+    if (!anime.genres) return false
+    const genres = anime.genres.toLowerCase()
+    return NSFW_TAGS.some(tag => genres.includes(tag.toLowerCase()))
+  }
+
+  // Filter anime based on NSFW setting
+  const filterNSFW = (animeList) => {
+    if (nsfwEnabled) return animeList
+    return animeList.filter(anime => !isNSFW(anime))
+  }
 
   useEffect(() => {
     loadHomeAnime()
@@ -211,7 +227,8 @@ const [genreFilter, setGenreFilter] = useState([])
     try {
       const response = await fetch(`${API_BASE}/home?limit=20`)
       const data = await response.json()
-      setHomeAnime(Array.isArray(data) ? data : [])
+      const animeList = Array.isArray(data) ? data : []
+      setHomeAnime(filterNSFW(animeList))
     } catch (err) {
       setError("Failed to load anime data")
     } finally {
@@ -227,7 +244,12 @@ const [genreFilter, setGenreFilter] = useState([])
       })
       if (response.ok) {
         const data = await response.json()
-        setUserLists(data)
+        // Filter NSFW content from user lists as well
+        const filteredData = {}
+        Object.keys(data).forEach(listType => {
+          filteredData[listType] = filterNSFW(data[listType] || [])
+        })
+        setUserLists(filteredData)
       }
     } catch (err) {
       console.error("Failed to load user lists:", err)
@@ -238,12 +260,15 @@ const [genreFilter, setGenreFilter] = useState([])
     if (query.length > 1) {
       fetch(`${API_BASE}/search?query=${encodeURIComponent(query)}`)
         .then((res) => res.json())
-        .then((data) => setSuggestions(Array.isArray(data) ? data : []))
+        .then((data) => {
+          const searchResults = Array.isArray(data) ? data : []
+          setSuggestions(filterNSFW(searchResults))
+        })
         .catch(() => setSuggestions([]))
     } else {
       setSuggestions([])
     }
-  }, [query])
+  }, [query, nsfwEnabled])
 
   const handleSelect = async (anime) => {
     setSelectedAnime(anime)
@@ -254,36 +279,55 @@ const [genreFilter, setGenreFilter] = useState([])
       try {
         const response = await fetch(`${API_BASE}/recommend?title=${encodeURIComponent(anime.title_romaji)}`)
         const data = await response.json()
-        setRecommendations(Array.isArray(data) ? data : [])
+        const recList = Array.isArray(data) ? data : []
+        setRecommendations(filterNSFW(recList))
       } catch (err) {
         setRecommendations([])
       }
     }
   }
-useEffect(() => {
-  handleFilter()
-}, [genreFilter])
 
-const handleFilter = async () => {
-  setLoading(true)
-  setError(null)
+  useEffect(() => {
+    handleFilter()
+  }, [genreFilter, nsfwEnabled])
 
-  try {
-    const url = genreFilter.length > 0
-      ? `${API_BASE}/filter?genres=${encodeURIComponent(genreFilter.join(","))}`
-      : `${API_BASE}/home?limit=20`
+  const handleFilter = async () => {
+    setLoading(true)
+    setError(null)
 
-    const response = await fetch(url)
-    const data = await response.json()
-    setHomeAnime(Array.isArray(data) ? data : [])
-  } catch (err) {
-    setError("Failed to filter anime")
-    setHomeAnime([])
-  } finally {
-    setLoading(false)
+    try {
+      const url = genreFilter.length > 0
+        ? `${API_BASE}/filter?genres=${encodeURIComponent(genreFilter.join(","))}`
+        : `${API_BASE}/home?limit=20`
+
+      const response = await fetch(url)
+      const data = await response.json()
+      const animeList = Array.isArray(data) ? data : []
+      setHomeAnime(filterNSFW(animeList))
+    } catch (err) {
+      setError("Failed to filter anime")
+      setHomeAnime([])
+    } finally {
+      setLoading(false)
+    }
   }
-}
 
+  // Re-filter existing data when NSFW toggle changes
+  useEffect(() => {
+    if (homeAnime.length > 0) {
+      const currentData = [...homeAnime]
+      // We need to reload data to get full results when enabling NSFW
+      if (nsfwEnabled) {
+        loadHomeAnime()
+      } else {
+        // When disabling NSFW, filter current results
+        setHomeAnime(filterNSFW(currentData))
+      }
+    }
+    if (user) {
+      loadUserLists()
+    }
+  }, [nsfwEnabled])
 
   if (loading && homeAnime.length === 0) {
     return (
@@ -295,12 +339,13 @@ const handleFilter = async () => {
       </div>
     )
   }
-const GENRES = [
-  "Action", "Adventure", "Drama", "Sci-Fi", "Mystery", "Comedy",
-  "Supernatural", "Fantasy", "Sports", "Romance", "Slice of Life",
-  "Horror", "Psychological", "Thriller", "Ecchi", "Mecha",
-  "Music", "Mahou Shoujo"
-]
+
+  const GENRES = [
+    "Action", "Adventure", "Drama", "Sci-Fi", "Mystery", "Comedy",
+    "Supernatural", "Fantasy", "Sports", "Romance", "Slice of Life",
+    "Horror", "Psychological", "Thriller", "Ecchi", "Mecha",
+    "Music", "Mahou Shoujo"
+  ]
 
   return (
     <div className="container" style={{ padding: "24px 0" }}>
@@ -343,30 +388,51 @@ const GENRES = [
               )}
             </div>
 
-          <div style={{ maxWidth: 720, margin: "0 auto 24px" }}>
-  <p style={{ marginBottom: 8, fontWeight: 600 }}>Filter by Genre:</p>
-  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-    {GENRES.map((g) => (
-   <button
-  key={g}
-  onClick={() => {
-    setGenreFilter((prev) => {
-      const updated = prev.includes(g)
-        ? prev.filter((x) => x !== g) // remove if clicked again
-        : [...prev, g]                // add if not present
-      return updated
-    })
-  }}
-  className={`btn btn--sm ${genreFilter.includes(g) ? "btn--primary" : "btn--ghost"}`}
-  style={{ padding: "6px 12px", borderRadius: 20 }}
->
-  {g}
-</button>
+            {/* NSFW Toggle */}
+            <div style={{ maxWidth: 720, margin: "0 auto 16px", textAlign: "center" }}>
+              <button
+                onClick={() => setNsfwEnabled(!nsfwEnabled)}
+                className={`btn ${nsfwEnabled ? "btn--danger" : "btn--ghost"}`}
+                style={{ 
+                  display: "inline-flex", 
+                  alignItems: "center", 
+                  gap: 8,
+                  padding: "8px 16px",
+                  borderRadius: 20,
+                  fontSize: 14,
+                  fontWeight: 600
+                }}
+              >
+                {nsfwEnabled ? <Eye size={16} /> : <EyeOff size={16} />}
+                NSFW {nsfwEnabled ? "ON" : "OFF"}
+              </button>
+              <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
+                {nsfwEnabled ? "Adult content visible" : "Adult content hidden"}
+              </p>
+            </div>
 
-    ))}
-  </div>
-</div>
-
+            <div style={{ maxWidth: 720, margin: "0 auto 24px" }}>
+              <p style={{ marginBottom: 8, fontWeight: 600 }}>Filter by Genre:</p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {GENRES.map((g) => (
+                  <button
+                    key={g}
+                    onClick={() => {
+                      setGenreFilter((prev) => {
+                        const updated = prev.includes(g)
+                          ? prev.filter((x) => x !== g) // remove if clicked again
+                          : [...prev, g]                // add if not present
+                        return updated
+                      })
+                    }}
+                    className={`btn btn--sm ${genreFilter.includes(g) ? "btn--primary" : "btn--ghost"}`}
+                    style={{ padding: "6px 12px", borderRadius: 20 }}
+                  >
+                    {g}
+                  </button>
+                ))}
+              </div>
+            </div>
           </>
         )}
       </div>
