@@ -4,7 +4,7 @@ import './index.css';
 import { useState, useEffect, createContext, useContext } from "react"
 import { Sun, Moon, User, Heart, List, Plus, X, Star, MonitorPlay, CheckCircle2, Calendar } from "lucide-react"
 // import { Plus, X, Star } from "lucide-react"
-const API_BASE = "https://anime-recommender-luyz.onrender.com"
+const API_BASE = "http://127.0.0.1:5000"
 // Theme Context
 const ThemeContext = createContext()
 
@@ -68,7 +68,7 @@ function Header() {
         className="container"
         style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}
       >
-        <h1 style={{ fontSize: 22, fontWeight: 800 }}>Anime Recommender</h1>
+        <h1 style={{ fontSize: 22, fontWeight: 800 } }>Anime Recommender</h1>
 
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         
@@ -750,18 +750,19 @@ function UserListItem({ item, listType, onUpdate }) {
         </div>
       </div>
 
-      <div className="card__body">
-        <h3 className="card__title">{item.anime_title || "Unknown Title"}</h3>
-        {item.score > 0 && (
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, color: "var(--star)" }}>
-            <Star size={12} fill="currentColor" />
-            <span style={{ fontSize: 12, color: "var(--muted)" }}>{item.score}/10</span>
-          </div>
-        )}
-        <p className="card__meta" style={{ marginTop: 6 }}>
-          Added: {item.added_date ? new Date(item.added_date).toLocaleDateString() : "Unknown"}
-        </p>
-      </div>
+    <div className="card__body">
+  <h3 className="card__title">{item.title_romaji || "Unknown Title"}</h3>
+  {item.score > 0 && (
+    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, color: "var(--star)" }}>
+      <Star size={12} fill="currentColor" />
+      <span style={{ fontSize: 12, color: "var(--muted)" }}>{item.score}/10</span>
+    </div>
+  )}
+  <p className="card__meta" style={{ marginTop: 6 }}>
+    Added: {item.added_date ? new Date(item.added_date).toLocaleDateString() : "Unknown"}
+  </p>
+</div>
+
     </div>
   )
 }
