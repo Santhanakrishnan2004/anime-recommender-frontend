@@ -1,10 +1,10 @@
+
 "use client"
 import './index.css';
 import { useState, useEffect, createContext, useContext } from "react"
 import { Sun, Moon, User, Heart, List, Plus, X, Star, MonitorPlay, CheckCircle2, Calendar } from "lucide-react"
 // import { Plus, X, Star } from "lucide-react"
 const API_BASE = "https://anime-recommender-luyz.onrender.com"
-
 // Theme Context
 const ThemeContext = createContext()
 
@@ -289,6 +289,12 @@ function MainContent() {
       </div>
     )
   }
+const GENRES = [
+  "Action", "Adventure", "Drama", "Sci-Fi", "Mystery", "Comedy",
+  "Supernatural", "Fantasy", "Sports", "Romance", "Slice of Life",
+  "Horror", "Psychological", "Thriller", "Ecchi", "Mecha",
+  "Music", "Mahou Shoujo"
+]
 
   return (
     <div className="container" style={{ padding: "24px 0" }}>
@@ -331,19 +337,25 @@ function MainContent() {
               )}
             </div>
 
-            <div style={{ maxWidth: 560, margin: "0 auto 24px", display: "flex", gap: 8 }}>
-              <input
-                type="text"
-                placeholder="Filter by genres (comma-separated)"
-                value={genreFilter}
-                onChange={(e) => setGenreFilter(e.target.value)}
-                className="input"
-                style={{ flex: 1 }}
-              />
-              <button onClick={handleFilter} className="btn btn--primary">
-                Filter
-              </button>
-            </div>
+          <div style={{ maxWidth: 720, margin: "0 auto 24px" }}>
+  <p style={{ marginBottom: 8, fontWeight: 600 }}>Filter by Genre:</p>
+  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+    {GENRES.map((g) => (
+      <button
+        key={g}
+        onClick={() => {
+          setGenreFilter(g)
+          handleFilter()
+        }}
+        className={`btn btn--sm ${genreFilter === g ? "btn--primary" : "btn--ghost"}`}
+        style={{ padding: "6px 12px", borderRadius: 20 }}
+      >
+        {g}
+      </button>
+    ))}
+  </div>
+</div>
+
           </>
         )}
       </div>
