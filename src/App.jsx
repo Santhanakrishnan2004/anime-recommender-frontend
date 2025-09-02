@@ -188,7 +188,8 @@ function MainContent() {
   const [suggestions, setSuggestions] = useState([])
   const [selectedAnime, setSelectedAnime] = useState(null)
   const [recommendations, setRecommendations] = useState([])
-  const [genreFilter, setGenreFilter] = useState("")
+const [genreFilter, setGenreFilter] = useState([])
+
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [userLists, setUserLists] = useState({
@@ -259,23 +260,30 @@ function MainContent() {
       }
     }
   }
+useEffect(() => {
+  handleFilter()
+}, [genreFilter])
 
-  const handleFilter = async () => {
-    setLoading(true)
-    try {
-      const url = genreFilter.trim()
-        ? `${API_BASE}/filter?genres=${encodeURIComponent(genreFilter)}`
-        : `${API_BASE}/home?limit=20`
+const handleFilter = async () => {
+  setLoading(true)
+  setError(null)
 
-      const response = await fetch(url)
-      const data = await response.json()
-      setHomeAnime(Array.isArray(data) ? data : [])
-    } catch (err) {
-      setError("Failed to filter anime")
-    } finally {
-      setLoading(false)
-    }
+  try {
+    const url = genreFilter.length > 0
+      ? `${API_BASE}/filter?genres=${encodeURIComponent(genreFilter.join(","))}`
+      : `${API_BASE}/home?limit=20`
+
+    const response = await fetch(url)
+    const data = await response.json()
+    setHomeAnime(Array.isArray(data) ? data : [])
+  } catch (err) {
+    setError("Failed to filter anime")
+    setHomeAnime([])
+  } finally {
+    setLoading(false)
   }
+}
+
 
   if (loading && homeAnime.length === 0) {
     return (
@@ -339,17 +347,22 @@ const GENRES = [
   <p style={{ marginBottom: 8, fontWeight: 600 }}>Filter by Genre:</p>
   <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
     {GENRES.map((g) => (
-      <button
-        key={g}
-        onClick={() => {
-          setGenreFilter(g)
-          handleFilter()
-        }}
-        className={`btn btn--sm ${genreFilter === g ? "btn--primary" : "btn--ghost"}`}
-        style={{ padding: "6px 12px", borderRadius: 20 }}
-      >
-        {g}
-      </button>
+   <button
+  key={g}
+  onClick={() => {
+    setGenreFilter((prev) => {
+      const updated = prev.includes(g)
+        ? prev.filter((x) => x !== g) // remove if clicked again
+        : [...prev, g]                // add if not present
+      return updated
+    })
+  }}
+  className={`btn btn--sm ${genreFilter.includes(g) ? "btn--primary" : "btn--ghost"}`}
+  style={{ padding: "6px 12px", borderRadius: 20 }}
+>
+  {g}
+</button>
+
     ))}
   </div>
 </div>
