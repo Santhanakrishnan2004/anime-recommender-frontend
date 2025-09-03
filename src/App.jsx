@@ -3,7 +3,7 @@ import './index.css';
 import { useState, useEffect, createContext, useContext } from "react"
 import { Sun, Moon, User, Heart, List, Plus, X, Star, MonitorPlay, CheckCircle2, Calendar, EyeOff, Eye } from "lucide-react"
 // import { Plus, X, Star } from "lucide-react"
-const API_BASE = "http://127.0.0.1:5000"
+const API_BASE = "https://anime-recommender-luyz.onrender.com"
 // Theme Context
 const ThemeContext = createContext()
 
